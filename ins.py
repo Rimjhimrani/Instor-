@@ -328,10 +328,10 @@ def generate_sticker_labels(df, line_loc_header_width, line_loc_box1_width,
             # Create ASSLY row content
             first_box_content = first_box_logo if first_box_logo else ""
 
-            # MODIFIED: Create table data with 3-box PART NO row
+            # FIXED: Create table data with 3-box PART NO row (removed blank box)
             unified_table_data = [
                 [first_box_content, "ASSLY", Paragraph(ASSLY, ASSLY_style)],
-                ["PART NO", Paragraph(f"<b>{part_no}</b>", Part_style), "", Paragraph(f"<b>{part_status}</b>", Part_status_style)],  # Modified row with 4 columns
+                ["PART NO", Paragraph(f"<b>{part_no}</b>", Part_style), Paragraph(f"<b>{part_status}</b>", Part_status_style)],  # FIXED: Only 3 columns now
                 ["PART DESC", Paragraph(desc, desc_style)],
                 ["QTY/VEH", Paragraph(str(Part_per_veh), partper_style), qr_cell],
                 ["TYPE", Paragraph(str(Type), Type_style), ""],
@@ -346,11 +346,10 @@ def generate_sticker_labels(df, line_loc_header_width, line_loc_box1_width,
                 content_width * 0.60     # Value: 60%
             ]
 
-            # MODIFIED: New column widths for 4-column PART NO row
+            # FIXED: New column widths for 3-column PART NO row (removed blank box)
             col_widths_partno = [
                 content_width * 0.25,    # Header: 25%
-                content_width * 0.35,    # Part number: 35%
-                content_width * 0.15,    # Empty box: 15%
+                content_width * 0.50,    # Part number: 50% (increased from 35%)
                 content_width * 0.25     # Part status: 25%
             ]
 
@@ -366,9 +365,9 @@ def generate_sticker_labels(df, line_loc_header_width, line_loc_box1_width,
 
             row_heights = [ASSLY_row_height, part_row_height, desc_row_height, bottom_row_height, bottom_row_height, bottom_row_height, location_row_height]
 
-            # MODIFIED: Create separate tables with new PART NO table structure
+            # FIXED: Create separate tables with new 3-column PART NO table structure
             assly_table = Table([unified_table_data[0]], colWidths=col_widths_assly, rowHeights=[row_heights[0]])
-            partno_table = Table([unified_table_data[1]], colWidths=col_widths_partno, rowHeights=[row_heights[1]])  # New 4-column table
+            partno_table = Table([unified_table_data[1]], colWidths=col_widths_partno, rowHeights=[row_heights[1]])  # FIXED: Now 3-column table
             desc_table = Table([unified_table_data[2]], colWidths=col_widths_standard, rowHeights=[row_heights[2]])
             middle_table = Table(unified_table_data[3:6], colWidths=col_widths_middle, rowHeights=row_heights[3:6])
             bottom_table = Table([unified_table_data[6]], colWidths=col_widths_bottom, rowHeights=[row_heights[6]])
@@ -389,19 +388,18 @@ def generate_sticker_labels(df, line_loc_header_width, line_loc_box1_width,
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
             ]
 
-            # MODIFIED: New style for 4-column PART NO table
+            # FIXED: New style for 3-column PART NO table (removed blank box references)
             partno_style = [
                 ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
                 ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),  # Header bold
                 ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),  # Part number bold
-                ('FONTNAME', (3, 0), (3, 0), 'Helvetica-Bold'),  # Part status bold
+                ('FONTNAME', (2, 0), (2, 0), 'Helvetica-Bold'),  # Part status bold
                 ('FONTSIZE', (0, 0), (0, 0), 8),                # Header font size
                 ('FONTSIZE', (1, 0), (1, 0), 11),               # Part number font size
-                ('FONTSIZE', (3, 0), (3, 0), 9),                # Part status font size
+                ('FONTSIZE', (2, 0), (2, 0), 9),                # Part status font size
                 ('ALIGN', (0, 0), (0, 0), 'CENTER'),            # Header centered
                 ('ALIGN', (1, 0), (1, 0), 'LEFT'),              # Part number left
-                ('ALIGN', (2, 0), (2, 0), 'CENTER'),            # Empty box centered
-                ('ALIGN', (3, 0), (3, 0), 'CENTER'),            # Part status centered
+                ('ALIGN', (2, 0), (2, 0), 'CENTER'),            # Part status centered
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ('GRID', (0, 0), (-1, -1), 1, colors.black),
                 ('LEFTPADDING', (0, 0), (-1, -1), 3),
@@ -459,12 +457,12 @@ def generate_sticker_labels(df, line_loc_header_width, line_loc_box1_width,
 
             # Apply table styles
             assly_table.setStyle(TableStyle(assly_style))
-            partno_table.setStyle(TableStyle(partno_style))  # New part number table
+            partno_table.setStyle(TableStyle(partno_style))  # Updated part number table
             desc_table.setStyle(TableStyle(desc_style_table))
             middle_table.setStyle(TableStyle(middle_style))
             bottom_table.setStyle(TableStyle(bottom_style))
 
-            # MODIFIED: Add tables to elements with new part number table
+            # FIXED: Add tables to elements with updated part number table
             elements.extend([assly_table, partno_table, desc_table, middle_table, bottom_table])
 
             # Add page break after each sticker except the last one
@@ -477,7 +475,7 @@ def generate_sticker_labels(df, line_loc_header_width, line_loc_box1_width,
         doc.build(all_elements, onFirstPage=draw_border, onLaterPages=draw_border)
 
         progress_bar.empty()
-        st.success(f"✅ Successfully generated {total_rows} sticker labels with part status boxes!")
+        st.success(f"✅ Successfully generated {total_rows} sticker labels with 3-box part number row!")
 
         # Read the generated PDF
         with open(output_pdf_path, 'rb') as pdf_file:
@@ -540,123 +538,112 @@ def main():
                         st.write(f"{i}. `{col}`")
 
             except Exception as e:
-                st.error(f"❌ Error processing file: {str(e)}")
+                st.error(f"❌ Error reading file: {str(e)}")
                 st.session_state.uploaded_file = None
 
     # Tab 2: Logo Upload
     with tab2:
-        st.header("🖼️ Upload Your Logo")
+        st.header("🖼️ Upload Logo (Optional)")
+        st.info("Upload a logo image to display in the first box of each sticker. The logo will be automatically resized to fit.")
+        
         uploaded_logo = st.file_uploader(
             "Choose logo image file",
             type=['png', 'jpg', 'jpeg', 'gif', 'bmp'],
-            help="Upload a logo to appear in the first box of each sticker (23% of sticker width)",
+            help="Upload your company logo or any image to display on stickers",
             key="logo_uploader"
         )
 
         if uploaded_logo is not None:
             st.session_state.uploaded_logo = uploaded_logo
+            st.success("✅ Logo uploaded successfully!")
+            
+            # Display logo preview
             try:
-                # Display logo preview
-                st.success("✅ Logo uploaded successfully!")
-                logo_img = PILImage.open(uploaded_logo)
-                
-                col1, col2, col3 = st.columns([1, 2, 1])
-                with col2:
-                    st.image(logo_img, caption="Logo Preview", use_column_width=True)
-                
-                # Show logo dimensions
-                st.write(f"**Original dimensions:** {logo_img.size[0]} x {logo_img.size[1]} pixels")
-                st.info("📏 Logo will be automatically resized to fit 23% of sticker width while maintaining aspect ratio")
-                
+                logo_preview = PILImage.open(uploaded_logo)
+                st.image(logo_preview, caption="Logo Preview", width=300)
             except Exception as e:
-                st.error(f"❌ Error processing logo: {str(e)}")
-                st.session_state.uploaded_logo = None
+                st.error(f"❌ Error displaying logo preview: {str(e)}")
 
     # Tab 3: Settings
     with tab3:
-        st.header("⚙️ Line Location Settings")
-        st.markdown("Configure the column widths for the Line Location row")
-        
+        st.header("⚙️ Layout Settings")
+        st.markdown("Adjust the column widths for the line location row (all values should sum to 1.0)")
+
         col1, col2 = st.columns(2)
         
         with col1:
-            line_loc_header_width = st.slider(
+            line_loc_header_width = st.number_input(
                 "Line Location Header Width",
-                min_value=0.10,
-                max_value=0.40,
+                min_value=0.1,
+                max_value=0.5,
                 value=0.25,
-                step=0.01,
-                format="%.2f",
-                help="Width of 'LINE LOCATION' header as fraction of total width"
+                step=0.05,
+                help="Width ratio for 'LINE LOCATION' header column"
             )
             
-            line_loc_box1_width = st.slider(
+            line_loc_box1_width = st.number_input(
                 "Box 1 Width",
-                min_value=0.10,
-                max_value=0.30,
+                min_value=0.05,
+                max_value=0.3,
                 value=0.1875,
-                step=0.01,
-                format="%.2f",
-                help="Width of first location box"
+                step=0.05,
+                help="Width ratio for first location box"
             )
             
-            line_loc_box2_width = st.slider(
+            line_loc_box2_width = st.number_input(
                 "Box 2 Width",
-                min_value=0.10,
-                max_value=0.30,
+                min_value=0.05,
+                max_value=0.3,
                 value=0.1875,
-                step=0.01,
-                format="%.2f",
-                help="Width of second location box"
+                step=0.05,
+                help="Width ratio for second location box"
             )
-        
+
         with col2:
-            line_loc_box3_width = st.slider(
+            line_loc_box3_width = st.number_input(
                 "Box 3 Width",
-                min_value=0.10,
-                max_value=0.30,
+                min_value=0.05,
+                max_value=0.3,
                 value=0.1875,
-                step=0.01,
-                format="%.2f",
-                help="Width of third location box"
+                step=0.05,
+                help="Width ratio for third location box"
             )
             
-            line_loc_box4_width = st.slider(
+            line_loc_box4_width = st.number_input(
                 "Box 4 Width",
-                min_value=0.10,
-                max_value=0.30,
+                min_value=0.05,
+                max_value=0.3,
                 value=0.1875,
-                step=0.01,
-                format="%.2f",
-                help="Width of fourth location box"
+                step=0.05,
+                help="Width ratio for fourth location box"
             )
-        
+
         # Calculate total width
         total_width = (line_loc_header_width + line_loc_box1_width + 
                       line_loc_box2_width + line_loc_box3_width + line_loc_box4_width)
         
         if abs(total_width - 1.0) > 0.01:
-            st.warning(f"⚠️ Total width is {total_width:.3f} (should be 1.000)")
-            st.info("Adjust the sliders so the total equals 1.000")
+            st.warning(f"⚠️ Total width is {total_width:.3f}. It should be close to 1.0 for optimal layout.")
         else:
             st.success(f"✅ Total width: {total_width:.3f}")
 
-    # Generation Section
-    st.header("🏷️ Generate Sticker Labels")
+    # Generate Button and Results
+    st.markdown("---")
     
     if st.session_state.uploaded_file is not None:
-        try:
-            # Read the file again for generation
-            if st.session_state.uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(st.session_state.uploaded_file)
-            else:
-                df = pd.read_excel(st.session_state.uploaded_file)
-            
-            col1, col2, col3 = st.columns([2, 1, 2])
-            
-            with col2:
-                if st.button("🚀 Generate Labels", type="primary", use_container_width=True):
-                    with st.spinner("Generating sticker labels..."):
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col2:
+            if st.button("🔄 Generate Sticker Labels", type="primary", use_container_width=True):
+                with st.spinner("Generating sticker labels..."):
+                    try:
+                        # Read the data file again
+                        if st.session_state.uploaded_file.name.endswith('.csv'):
+                            df = pd.read_csv(st.session_state.uploaded_file)
+                        else:
+                            df = pd.read_excel(st.session_state.uploaded_file)
+
+                        # Generate sticker labels
                         pdf_data, filename = generate_sticker_labels(
                             df,
                             line_loc_header_width,
@@ -666,78 +653,39 @@ def main():
                             line_loc_box4_width,
                             st.session_state.uploaded_logo
                         )
-                        
+
                         if pdf_data:
-                            # Create download button
+                            st.success("🎉 Sticker labels generated successfully!")
+                            
+                            # Provide download button
                             st.download_button(
                                 label="📥 Download PDF",
                                 data=pdf_data,
                                 file_name=filename,
                                 mime="application/pdf",
-                                type="secondary",
                                 use_container_width=True
                             )
                             
-                            # Display file info
-                            file_size_mb = len(pdf_data) / (1024 * 1024)
-                            st.success(f"✅ PDF generated successfully! Size: {file_size_mb:.2f} MB")
+                            # Show file info
+                            st.info(f"📊 Generated {len(df)} sticker labels")
                         else:
-                            st.error("❌ Failed to generate PDF. Please check your data and try again.")
-            
-            # Show summary information
-            st.markdown("---")
-            st.subheader("📋 Generation Summary")
-            
-            col1, col2, col3, col4 = st.columns(4)
-            
-            with col1:
-                st.metric("Total Rows", len(df))
-            
-            with col2:
-                st.metric("Total Columns", len(df.columns))
-            
-            with col3:
-                logo_status = "Yes" if st.session_state.uploaded_logo else "No"
-                st.metric("Logo Included", logo_status)
-            
-            with col4:
-                st.metric("Sticker Size", "10×15 cm")
-            
-        except Exception as e:
-            st.error(f"❌ Error reading data file: {str(e)}")
+                            st.error("❌ Failed to generate sticker labels. Please check your data and try again.")
+
+                    except Exception as e:
+                        st.error(f"❌ Error generating labels: {str(e)}")
     else:
-        st.info("📂 Please upload a data file in the 'Upload Data' tab to generate labels.")
-    
-    # Help Section
-    with st.expander("❓ Help & Information"):
-        st.markdown("""
-        ### Required Columns
-        Your data file must contain these columns (case-insensitive):
-        - **ASSLY/Assembly**: Assembly name
-        - **Part No/Part Number**: Part number
-        - **Description**: Part description
-        
-        ### Optional Columns
-        - **QTY/VEH**: Quantity per vehicle
-        - **Type**: Part type
-        - **Line Location**: Location information (separated by underscore)
-        - **Part Status**: Status of the part (NEW, ACTIVE, etc.)
-        
-        ### Features
-        - ✅ QR codes with all part information
-        - ✅ Customizable logo placement (23% width)
-        - ✅ Configurable line location boxes
-        - ✅ Professional PDF output
-        - ✅ 10×15 cm sticker format
-        - ✅ Automatic column detection
-        - ✅ Part status display box
-        
-        ### Tips
-        - Use clear, readable fonts in your logo
-        - Keep part descriptions concise
-        - Line location format: "Box1_Box2_Box3_Box4"
-        - File formats: CSV, Excel (.xlsx, .xls)
-        """)
+        st.info("👆 Please upload a data file in the 'Upload Data' tab to get started.")
+
+    # Footer
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style='text-align: center; color: #666; font-size: 0.8em;'>
+            🏷️ Sticker Label Generator | Built with Streamlit & ReportLab
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 if __name__ == "__main__":
     main()
